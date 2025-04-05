@@ -2,13 +2,14 @@ import { nylas, nylasConfig } from "@/libs/nylas";
 import { session } from "@/libs/session";
 import { ProfileModel } from "@/models/Profile";
 import mongoose from "mongoose";
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   console.log("Received callback from Nylas");
 
-  const url = new URL(req.url as string);
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+  const url = new URL(req.url || "");
   const code = url.searchParams.get("code");
 
   if (!code) {
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
       profileDoc.grantId = grantId;
       await profileDoc.save();
     } else {
-      const generatedUsername = email.split('@')[0] + '_' + Date.now();
+      const generatedUsername = email.split("@")[0] + "_" + Date.now();
       profileDoc = await ProfileModel.create({
         email,
         grantId,
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     await session().set("email", email);
 
-    redirect("/");
+    return NextResponse.redirect(`${baseUrl}/`);
   } catch (error) {
     console.error("Error in OAuth exchange:", error);
     return Response.json({ error: "OAuth Exchange Failed" }, { status: 500 });
